@@ -3,6 +3,12 @@ import * as path from 'path';
 import { Stocks } from './stockInterface';
 import { StockTransaction } from './transactionInterface'; 
 
+/*
+* FunctionName : stockAvaliable
+* Description : Calculate the current available stock 
+* argument : sku (string)
+* 
+*/
 export const stockAvailable = async (sku: string): Promise<{ sku: string, qty: number }> => {
     let stocksArray = JSON.parse(await fsPromises.readFile(
         path.join(__dirname, './../stock.json'),
@@ -27,9 +33,10 @@ export const stockAvailable = async (sku: string): Promise<{ sku: string, qty: n
 
     var transactQuantity = 0;
     if (transObj.length > 0) {
+        //Iterate through all transactions of order and refund
         transactQuantity = transObj.reduce(function (orderQuantity: number, trans: StockTransaction) {
             if (trans.type == 'order') {
-                return orderQuantity + trans.qty;
+                return orderQuantity + trans.qty; 
             }
             if (trans.type == 'refund') {
                 return orderQuantity - trans.qty;
