@@ -1,7 +1,7 @@
 import { promises as fsPromises } from 'fs';
 import * as path from 'path';
 import { Stocks } from './stockInterface';
-import { StockTransaction } from './transactionInterface'; 
+import { StockTransaction} from './transactionInterface'; 
 
 /*
 * FunctionName : stockAvaliable
@@ -10,13 +10,13 @@ import { StockTransaction } from './transactionInterface';
 * 
 */
 export const stockAvailable = async (sku: string): Promise<{ sku: string, qty: number }> => {
-    let stocksArray = JSON.parse(await fsPromises.readFile(
+    let stocksArray: Array<Stocks> = JSON.parse(await fsPromises.readFile(
         path.join(__dirname, './../stock.json'),
         { encoding: 'utf-8' },
     )); //Read stock.json and save it as Array of objects
     let stockObj = stocksArray.find((e: Stocks) => e.sku == sku) //Find if sku exists in stock.json
 
-    let transacArray = JSON.parse(await fsPromises.readFile(
+    let transacArray:Array<StockTransaction> = JSON.parse(await fsPromises.readFile(
         path.join(__dirname, './../transactions.json'),
         { encoding: 'utf-8' },
     )); //Read transactions.json and save it as Array of objects
@@ -31,18 +31,24 @@ export const stockAvailable = async (sku: string): Promise<{ sku: string, qty: n
         initialQty = stockObj.stock; //Stock quantity initial from stock.json
     }
 
-    var transactQuantity = 0;
+    let stockRemaining = initialQty;
     if (transObj.length > 0) {
-        //Iterate through all transactions of order and refund
-        transactQuantity = transObj.reduce(function (orderQuantity: number, trans: StockTransaction) {
-            if (trans.type == 'order') {
-                return orderQuantity + trans.qty; 
-            }
-            if (trans.type == 'refund') {
-                return orderQuantity - trans.qty;
-            }
-        }, 0)
+        stockRemaining = calculateStock(transObj, initialQty);
     }
 
-    return { sku: sku, qty: initialQty - transactQuantity }
+    return { sku: sku, qty: stockRemaining }
+}
+
+const calculateStock = (transObj: Array<StockTransaction>, initialQty:number) : number => {
+    //Iterate through all transactions of order and refund
+    transObj.forEach(function(row){
+        if(row.type=='order'){
+            initialQty = initialQty - row.qty;
+        }
+        if (row.type == 'refund') {
+            initialQty =  initialQty + row.qty;
+        }
+
+    })
+    return initialQty;
 }
